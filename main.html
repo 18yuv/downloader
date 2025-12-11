@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>YouTube Video Downloader</title>
+
+<style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+        font-family: "Segoe UI", sans-serif;
+        background: linear-gradient(135deg, #0e1a2b, #1c3557, #23456d);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        color: #fff;
+        padding: 40px;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 1050px;
+        display: flex;
+        gap: 30px;
+        padding: 40px;
+        background: rgba(255,255,255,0.06);
+        backdrop-filter: blur(15px);
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.12);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+        animation: fadeIn 0.9s ease;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(30px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* LEFT COLUMN */
+    .left {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    /* RIGHT COLUMN */
+    .right {
+        flex: 1;
+        background: rgba(255,255,255,0.08);
+        padding: 20px;
+        border-radius: 15px;
+        border: 1px solid rgba(255,255,255,0.15);
+        overflow-y: auto;
+        max-height: 450px;
+    }
+
+    h2 {
+        margin-bottom: 10px;
+        font-size: 28px;
+        text-align: center;
+        color: #7ec8ff;
+        text-shadow: 0 0 12px #7ec8ff80;
+    }
+
+    input {
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+        border: none;
+        font-size: 15px;
+        background: rgba(255,255,255,0.15);
+        color: #e2f3ff;
+        backdrop-filter: blur(10px);
+        transition: 0.3s;
+    }
+
+    input::placeholder { color: rgba(255,255,255,0.6); }
+
+    input:focus {
+        background: rgba(255,255,255,0.25);
+        outline: none;
+        box-shadow: 0 0 12px rgba(100,175,255,0.7);
+    }
+
+    /* FIXED SELECT TEXT COLOR */
+    select {
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+        border: none;
+        font-size: 15px;
+        background: rgba(255,255,255,0.9); /* lighter background */
+        color: #000; /* BLACK TEXT */
+        transition: 0.3s;
+    }
+
+    select option {
+        color: #000; /* BLACK TEXT */
+    }
+
+    select:focus {
+        background: rgba(255,255,255,1);
+        outline: none;
+        box-shadow: 0 0 12px rgba(100,175,255,0.7);
+    }
+
+    button {
+        padding: 14px;
+        border: none;
+        border-radius: 12px;
+        font-size: 16px;
+        cursor: pointer;
+        color: #fff;
+        background: linear-gradient(135deg, #4a90e2, #0078ff);
+        box-shadow: 0 0 12px rgba(0,120,255,0.5);
+        transition: 0.25s;
+    }
+
+    button:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 0 18px rgba(0,140,255,0.9);
+    }
+
+    /* Progress Bar */
+    .progress-container {
+        width: 100%;
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+        height: 20px;
+        overflow: hidden;
+        display: none;
+    }
+
+    .progress-bar {
+        width: 0%;
+        height: 100%;
+        background: #7ec8ff;
+        transition: width 0.3s;
+    }
+
+    .info-container strong {
+        color: #a7d8ff;
+        font-size: 16px;
+    }
+
+    .info-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        font-size: 15px;
+        line-height: 1.4;
+    }
+
+    /* Popup */
+    .popup {
+        position: fixed;
+        bottom: 35px;
+        right: 35px;
+        padding: 18px 25px;
+        background: rgba(0, 200, 255, 0.18);
+        color: #7ec8ff;
+        border: 1px solid #7ec8ff;
+        border-radius: 12px;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 0 15px #7ec8ff70;
+        font-size: 16px;
+        display: none;
+        animation: slideUp 0.5s ease;
+    }
+
+    @keyframes slideUp {
+        from { opacity: 0; transform: translateY(25px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive layout */
+    @media (max-width: 900px) {
+        .container { flex-direction: column; }
+        .right { max-height: none; }
+    }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- LEFT COLUMN -->
+    <div class="left">
+        <h2>YouTube Video Downloader</h2>
+
+        <input id="url" type="text" placeholder="Enter YouTube URL">
+
+        <button onclick="loadVideo()">Load Video</button>
+
+        <select id="resSelect">
+            <option value="">Select resolution</option>
+        </select>
+
+        <button onclick="downloadVideo()">Download Video</button>
+
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="right">
+        <h2>Video Info</h2>
+        <div class="info-container" id="infoContainer"></div>
+    </div>
+</div>
+
+<div class="popup" id="popupMsg">✅ Video Downloaded Successfully!</div>
+
+<script>
+const API = "http://127.0.0.1:5000";
+
+function showInfo(info, resolutions) {
+    const container = document.getElementById("infoContainer");
+    container.innerHTML = "";
+
+    if (info.title) container.innerHTML += `<strong>Title:</strong> ${info.title}`;
+    if (info.author) container.innerHTML += `<strong>Author:</strong> ${info.author}`;
+    if (info.length) container.innerHTML += `<strong>Length:</strong> ${info.length} sec`;
+    if (info.views) container.innerHTML += `<strong>Views:</strong> ${info.views}`;
+    if (info.publish_date) container.innerHTML += `<strong>Published:</strong> ${new Date(info.publish_date).toLocaleDateString()}`;
+    if (resolutions && resolutions.all) container.innerHTML += `<strong>Available Resolutions:</strong> ${resolutions.all.join(', ')}`;
+}
+
+function popup() {
+    const box = document.getElementById("popupMsg");
+    box.style.display = "block";
+    setTimeout(() => box.style.display = "none", 3000);
+}
+
+async function loadVideo() {
+    const url = document.getElementById("url").value;
+    if (!url) return alert("Enter a YouTube URL first!");
+
+    const infoRes = await fetch(`${API}/video_info`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+    });
+    const infoData = await infoRes.json();
+
+    const resRes = await fetch(`${API}/available_resolutions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+    });
+    const resData = await resRes.json();
+
+    showInfo(infoData, resData);
+
+    const sel = document.getElementById("resSelect");
+    sel.innerHTML = `<option value="">Select resolution</option>`;
+    if (resData.all) {
+        resData.all.forEach(r => sel.innerHTML += `<option value="${r}">${r}</option>`);
+    }
+}
+
+async function downloadVideo() {
+    const url = document.getElementById("url").value;
+    const reso = document.getElementById("resSelect").value;
+
+    if (!reso) return alert("Select a resolution first!");
+
+    const progressBar = document.getElementById("progressBar");
+    const container = document.querySelector('.progress-container');
+
+    container.style.display = "block";
+    progressBar.style.width = "0%";
+
+    let fake = 0;
+    const anim = setInterval(() => {
+        fake += Math.random() * 10;
+        if (fake >= 95) fake = 95;
+        progressBar.style.width = fake + "%";
+    }, 200);
+
+    const res = await fetch(`${API}/download/${reso}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ url })
+    });
+
+    const result = await res.json();
+    console.log(result);
+
+    clearInterval(anim);
+    progressBar.style.width = "100%";
+
+    popup();
+}
+</script>
+
+</body>
+</html>
