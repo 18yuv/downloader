@@ -13,7 +13,7 @@ def extract_video_id(url):
 
     if "youtu.be" in url:
         return url.split("/")[-1].split("?")[0]
-
+   
     if "shorts" in url:
         return url.split("shorts/")[1].split("?")[0]
 
